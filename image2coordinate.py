@@ -3,8 +3,9 @@
 # @Email:  joey.teng.dev@gmail.com
 # @Filename: image2coordinate.py
 # @Last modified by:   Toujour
-# @Last modified time: 18-Nov-2017
+# @Last modified time: 19-Nov-2017
 
+import json
 import queue
 import sys
 import warnings
@@ -288,7 +289,7 @@ def processing(angle, image):
     plt.savefig('image.png')
     plt.cla()
 
-    threshold = 0.4  # Assumption
+    threshold = 0.2  # Assumption
 
     max_len = len(angle)
     min_len = 0
@@ -338,11 +339,15 @@ if __name__ == '__main__':
     print("INFO: Image Loaded", flush=True)
 
     angle = find_angle(image)
+    _angle = [{'position': element['position']} for element in angle]
+    json.dump(_angle, open('angle.json', 'w'))
     print("INFO: Points at edges identified", flush=True)
 
     vertices = processing(angle, image)
+    json.dump(vertices, open('vertices.json', 'w'))
 
     print(vertices)
+
     import matplotlib.pyplot as plt
     xx = []
     yy = []
