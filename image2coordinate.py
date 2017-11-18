@@ -108,7 +108,7 @@ def next_point(point, image, visited):
                         Queue.put(new_point)
             else:
                 pass
-        print('INFO: Pop: {0}'.format(point), flush=True)
+        # print('INFO: Pop: {0}'.format(point), flush=True)
 
     return None
 
@@ -174,12 +174,12 @@ def find_angle(image):
         if (Traced):
             print("INFO: Trace back {0} steps".format(i), flush=True)
 
-        if len(angle) % 1 == 0:
-            print("INFO: {0}".format(angle[-1]), flush=True)
+        if len(angle) % 100 == 0:
+            # print("INFO: {0}".format(angle[-1]), flush=True)
             print("INFO: {0} points has been identified".format(
                 len(angle)), flush=True)
-            for i in angle:
-                print(i['position'], flush=True)
+            # for i in angle:
+            #    print(i['position'], flush=True)
 
     angle[-1]['next'] = angle[0]
     if (len(angle) > 2):
