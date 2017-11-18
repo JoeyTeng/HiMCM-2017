@@ -60,8 +60,9 @@ def at_edge(point, image):
 
     if (point[0] < 0 or point[1] < 0 or point[0] >= image.shape[0] or point[1] >= image.shape[1]):
         return False
-    if (point[0] == 0 or point[1] == 0 or point[0] == image.shape[0] - 1 or point[1] == image.shape[1] - 1):
+    if (is_black(image[point[0]][point[1]]) and (point[0] == 0 or point[1] == 0 or point[0] == image.shape[0] - 1 or point[1] == image.shape[1] - 1)):
         return True
+
     if (is_black(image[point[0]][point[1]])):
         for inc in [(-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1)]:
             new_point = ((point[0] + inc[0]), (point[1] + inc[1]))
@@ -102,8 +103,12 @@ def next_point(point, image, visited):
                     visited[new_point] = True
                     return {'position': new_point}
                 else:
-                    visited[new_point] = True
-                    Queue.put(new_point)
+                    if (point[0] < 0 or point[1] < 0 or point[0] >= image.shape[0] or point[1] >= image.shape[1]):
+                        visited[new_point] = True
+                        Queue.put(new_point)
+            else:
+                pass
+        print('INFO: Pop: {0}'.format(point), flush=True)
 
     return None
 
@@ -116,82 +121,84 @@ def find_angle(image):
     visited = {}
     # Find the first point
     point = None
-    while True:
-        y = 0
-        for row in image:
-            x = 0
-            for pixel in row:
-                # if (is_black(pixel)):
-                # if (is_black(pixel) and not at_edge((x, y), image)):
-                #    print("Warning: pixel not at edge! ({0}, {1})".format(
-                #        x, y), flush=True)
-                #    for xx in (-1, 0, 1):
-                #        print("{0} {1} {2}".format(is_black(image[x + xx][y - 1]), is_black(
-                #            image[x + xx][y]), is_black(image[x + xx][y + 1])))
-                if (at_edge((x, y), image) and (x, y) not in visited):  # if $pixel need to be drawn
-                    point = {'position': (x, y)}
-                    break
-                x += 1
-            y += 1
-            if (point is not None):
+    y = 0
+    for row in image:
+        x = 0
+        for pixel in row:
+            # if (is_black(pixel)):
+            # if (is_black(pixel) and not at_edge((x, y), image)):
+            #    print("Warning: pixel not at edge! ({0}, {1})".format(
+            #        x, y), flush=True)
+            #    for xx in (-1, 0, 1):
+            #        print("{0} {1} {2}".format(is_black(image[x + xx][y - 1]), is_black(
+            #            image[x + xx][y]), is_black(image[x + xx][y + 1])))
+            if (at_edge((x, y), image) and (x, y) not in visited):  # if $pixel need to be drawn
+                point = {'position': (x, y)}
+                visited[point['position']] = True
                 break
-
-        print(point, flush=True)
-        if (point is None):
+            x += 1
+        y += 1
+        if (point is not None):
             break
 
-        angle = [point]
+    print(point, flush=True)
+
+    angle = []
+    angle.append(point)
+
+    point = next_point(point, image, visited)
+
+    if (point is not None):
+        angle[-1]['next'] = point
+        angle.append(point)
         point = next_point(point, image, visited)
 
-        if (point is not None):
-            angle[-1]['next'] = point
-            angle.append(point)
-            point = next_point(point, image, visited)
+    while (point is not None):
+        try:
+            point['angle'] = cal_angle(angle[-2], angle[-1], point)
+        except AssertionError:
+            print('angle[-2]: {0}\nangle[-1]: {1}\npoint: {2}'.format(
+                angle[-2], angle[-1], point), flush=True)
+            assert(False)
 
-        while (point is not None):
-            try:
-                point['angle'] = cal_angle(angle[-2], angle[-1], point)
-            except AssertionError:
-                print('angle[-2]: {0}\nangle[-1]: {1}\npoint: {2}'.format(
-                    angle[-2], angle[-1], point), flush=True)
-                assert(False)
+        angle[-1]['next'] = point
+        angle.append(point)
+        point = next_point(point, image, visited)
 
-            angle[-1]['next'] = point
-            angle.append(point)
-            point = next_point(point, image, visited)
+        i = 1
+        Traced = False
+        while (point is None and i < len(angle)):
+            Traced = True
+            point = next_point(angle[-i], image, visited)
+            i += 1
+        if (Traced):
+            print("INFO: Trace back {0} steps".format(i), flush=True)
 
-            i = 1
-            Traced = False
-            while (point is None and i < len(angle)):
-                Traced = True
-                point = next_point(angle[-i], image, visited)
-                i += 1
-            if (Traced):
-                print("INFO: Trace back {0} steps".format(i), flush=True)
+        if len(angle) % 1 == 0:
+            print("INFO: {0}".format(angle[-1]), flush=True)
+            print("INFO: {0} points has been identified".format(
+                len(angle)), flush=True)
+            for i in angle:
+                print(i['position'], flush=True)
 
-            if len(angle) % 100 == 0:
-                print("INFO: {0} points has been identified".format(
-                    len(angle)), flush=True)
+    angle[-1]['next'] = angle[0]
+    if (len(angle) > 2):
+        angle[0]['angle'] = cal_angle(angle[-2], angle[-1], angle[0])
+        angle[1]['angle'] = cal_angle(angle[-1], angle[0], angle[1])
 
-        angle[-1]['next'] = angle[0]
-        if (len(angle) > 2):
-            angle[0]['angle'] = cal_angle(angle[-2], angle[-1], angle[0])
-            angle[1]['angle'] = cal_angle(angle[-1], angle[0], angle[1])
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(256, 256), dpi=32)
+    xx = []
+    yy = []
+    for x, y in visited.keys():
+        xx.append(x)
+        yy.append(y)
+    plt.axis([0, image.shape[1], 0, image.shape[0]])
+    plt.scatter(yy, xx, s=32)
+    plt.savefig('visited.png')
+    plt.cla()
 
-        import matplotlib.pyplot as plt
-        plt.figure(figsize=(256, 256), dpi=32)
-        xx = []
-        yy = []
-        for x, y in visited.keys():
-            xx.append(x)
-            yy.append(y)
-        plt.axis([0, image.shape[1], 0, image.shape[0]])
-        plt.scatter(yy, xx, s=4)
-        # plt.axis('off')
-        plt.savefig('visited.png')
-        plt.cla()
-
-        return angle
+    return angle
 
 
 def line_to(start, end, image):
@@ -239,7 +246,7 @@ def similarity(vertices, image):
                 xx.append(x)
                 yy.append(y)
     plt.axis([0, image_fitted.shape[1], 0, image_fitted.shape[0]])
-    plt.scatter(yy, xx, s=4)
+    plt.scatter(yy, xx, s=32)
     plt.savefig('fitted.png')
     plt.cla()
 
@@ -277,7 +284,7 @@ def processing(angle, image):
         xx.append(x)
         yy.append(y)
     plt.axis([0, image.shape[1], 0, image.shape[0]])
-    plt.scatter(yy, xx, s=4)
+    plt.scatter(yy, xx, s=32)
     plt.savefig('image.png')
     plt.cla()
 
@@ -343,7 +350,7 @@ if __name__ == '__main__':
         xx.append(x)
         yy.append(y)
     plt.axis([0, image.shape[1], 0, image.shape[0]])
-    plt.scatter(xx, yy, s=4)
+    plt.scatter(xx, yy, s=32)
     plt.savefig('vertices.png')
     plt.cla()
 
