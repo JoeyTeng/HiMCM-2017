@@ -298,7 +298,8 @@ def processing(angle, image):
     while (max_len > min_len):
         backup = [element for element in angle]
 
-        test_len = (max_len + min_len) >> 1
+        # test_len = (max_len + min_len) >> 1
+        test_len = 320
         vertices.clear()
 
         i = 0
@@ -328,6 +329,7 @@ def processing(angle, image):
         print("INFO: One iteration completed.", flush=True)
         print("INFO: Max points: {0}; Min points: {1}; Similarity: {2}; size of vertices: {3}".format(
             max_len, min_len, sim, len(vertices)), flush=True)
+        break
 
     return vertices
 
